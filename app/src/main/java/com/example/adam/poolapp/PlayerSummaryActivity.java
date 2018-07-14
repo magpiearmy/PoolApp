@@ -3,17 +3,18 @@ package com.example.adam.poolapp;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.JsonReader;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PlayerSummaryActivity extends AppCompatActivity {
 
@@ -36,29 +37,56 @@ public class PlayerSummaryActivity extends AppCompatActivity {
 
     private void callApi() {
         try {
-            Unirest.get("http://10.0.2.2:8081/players");
+            URL getPlayersEndpoint = new URL("http://10.0.2.2:8081/players");
+            HttpURLConnection connection = (HttpURLConnection) getPlayersEndpoint.openConnection();
 
-            JsonNode body = response.getBody();
-            JSONArray playerArray = body.getArray();
+            if (connection.getResponseCode() == 200) {
+                final List<Player> players = new ArrayList<>();
 
-            for (int i = 0; i < playerArray.length(); i++) {
-                JSONObject playerJson = playerArray.getJSONObject(i);
-                int id = playerJson.getInt("player_id");
-                String name = playerJson.getString("player_name");
-                addPlayerToTable(id, name);
+                InputStreamReader bodyReader = new InputStreamReader(connection.getInputStream(), "UTF-8");
+                JsonReader jsonReader = new JsonReader(bodyReader);
+                jsonReader.beginArray();
+                while (jsonReader.hasNext()) {
+                    jsonReader.beginObject();
+                    players.add(parsePlayer(jsonReader));
+                    jsonReader.endObject();
+                }
+                jsonReader.close();
+
+                addPlayersToTable(players);
             }
 
-        } catch (UnirestException e) {
+        } catch (MalformedURLException e) {
             e.printStackTrace();
-        } catch (JSONException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void addPlayerToTable(int id, String name) {
-        TableLayout tableLayout = findViewById(R.id.playerSummaryTable);
-        TableRow row = buildPlayerTableRow(name);
-        tableLayout.addView(row, new TableLayout.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+    private Player parsePlayer(JsonReader jsonReader) throws IOException {
+        jsonReader.skipValue();
+        int id = jsonReader.nextInt();
+
+        jsonReader.skipValue();
+        String name = jsonReader.nextString();
+
+        jsonReader.skipValue();
+        int teamId = jsonReader.nextInt();
+
+        return new Player(id, name, teamId);
+    }
+
+    private void addPlayersToTable(final List<Player> players) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                for (Player player : players) {
+                    TableLayout tableLayout = findViewById(R.id.playerSummaryTable);
+                    TableRow row = buildPlayerTableRow(player.name);
+                    tableLayout.addView(row, new TableLayout.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
+                }
+            }
+        });
     }
 
     private TableRow buildPlayerTableRow(String playerName) {

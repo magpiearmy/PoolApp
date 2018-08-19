@@ -18,6 +18,10 @@ import java.util.List;
 
 public class PlayerSummaryActivity extends AppCompatActivity {
 
+    public static final String SERVER_HOST = "10.0.2.2";
+    public static final int SERVER_PORT = 8081;
+    public static final String PLAYERS_ENDPOINT = "/players";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,31 +40,46 @@ public class PlayerSummaryActivity extends AppCompatActivity {
     }
 
     private void callApi() {
-        try {
-            URL getPlayersEndpoint = new URL("http://10.0.2.2:8081/players");
-            HttpURLConnection connection = (HttpURLConnection) getPlayersEndpoint.openConnection();
+        HttpURLConnection connection = connectToServer();
 
+        try {
             if (connection.getResponseCode() == 200) {
-                final List<Player> players = new ArrayList<>();
 
                 InputStreamReader bodyReader = new InputStreamReader(connection.getInputStream(), "UTF-8");
-                JsonReader jsonReader = new JsonReader(bodyReader);
-                jsonReader.beginArray();
-                while (jsonReader.hasNext()) {
-                    jsonReader.beginObject();
-                    players.add(parsePlayer(jsonReader));
-                    jsonReader.endObject();
-                }
-                jsonReader.close();
+                List<Player> players = parsePlayersFromResponseBody(bodyReader);
 
                 addPlayersToTable(players);
             }
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
+    }
+
+    private HttpURLConnection connectToServer() {
+        try {
+            URL playersEndpoint = new URL("http", SERVER_HOST, SERVER_PORT, PLAYERS_ENDPOINT);
+            return (HttpURLConnection) playersEndpoint.openConnection();
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Malformed URL", e);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not connect to server", e);
+        }
+    }
+
+    private List<Player> parsePlayersFromResponseBody(InputStreamReader bodyReader) throws IOException {
+        List<Player> players = new ArrayList<>();
+
+        JsonReader jsonReader = new JsonReader(bodyReader);
+        jsonReader.beginArray();
+        while (jsonReader.hasNext()) {
+            jsonReader.beginObject();
+            players.add(parsePlayer(jsonReader));
+            jsonReader.endObject();
+        }
+        jsonReader.endArray();
+        jsonReader.close();
+
+        return players;
     }
 
     private Player parsePlayer(JsonReader jsonReader) throws IOException {
@@ -82,18 +101,18 @@ public class PlayerSummaryActivity extends AppCompatActivity {
             public void run() {
                 for (Player player : players) {
                     TableLayout tableLayout = findViewById(R.id.playerSummaryTable);
-                    TableRow row = buildPlayerTableRow(player.name);
+                    TableRow row = buildTableRow(player.name);
                     tableLayout.addView(row, new TableLayout.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
                 }
             }
         });
     }
 
-    private TableRow buildPlayerTableRow(String playerName) {
+    private TableRow buildTableRow(String playerName) {
         TextView nameTextView = new TextView(this);
         nameTextView.setText(playerName);
         nameTextView.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
-        nameTextView.setTextSize(28);
+        nameTextView.setTextSize(24);
 
         TableRow row = new TableRow(this);
         row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));

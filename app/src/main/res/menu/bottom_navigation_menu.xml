@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/home"
+        android:icon="@drawable/home_button_24"
+        android:title="Home" />
+    <item
+        android:id="@+id/league"
+        android:icon="@drawable/baseline_table_view_24"
+        android:title="Tables" />
+    <item
+        android:id="@+id/stats"
+        android:icon="@drawable/baseline_face_24"
+        android:title="Players" />
+</menu>

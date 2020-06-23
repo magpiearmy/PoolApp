@@ -31,12 +31,7 @@ public class PlayerSummaryActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        AsyncTask.execute(new Runnable() {
-            @Override
-            public void run() {
-                callApi();
-            }
-        });
+        AsyncTask.execute(this::callApi);
     }
 
     private void callApi() {
@@ -96,14 +91,11 @@ public class PlayerSummaryActivity extends AppCompatActivity {
     }
 
     private void addPlayersToTable(final List<Player> players) {
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                for (Player player : players) {
-                    TableLayout tableLayout = findViewById(R.id.playerSummaryTable);
-                    TableRow row = buildTableRow(player.name);
-                    tableLayout.addView(row, new TableLayout.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
-                }
+        runOnUiThread(() -> {
+            for (Player player : players) {
+                TableLayout tableLayout = findViewById(R.id.playerSummaryTable);
+                TableRow row = buildTableRow(player.name);
+                tableLayout.addView(row, new TableLayout.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
             }
         });
     }

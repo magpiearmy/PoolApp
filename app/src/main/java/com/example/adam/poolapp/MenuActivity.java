@@ -23,12 +23,9 @@ public class MenuActivity extends AppCompatActivity {
     private void addButtonClickHandlers() {
         playersButton = findViewById(R.id.playersButton);
         teamButton = findViewById(R.id.teamButton);
-        playersButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MenuActivity.this, PlayerSummaryActivity.class);
-                startActivity(intent);
-            }
+        playersButton.setOnClickListener(v -> {
+            Intent intent = new Intent(MenuActivity.this, PlayerSummaryActivity.class);
+            startActivity(intent);
         });
     }
 }

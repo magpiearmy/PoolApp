@@ -3,11 +3,15 @@ package com.example.adam.poolapp;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.JsonReader;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -18,36 +22,40 @@ import java.util.List;
 
 public class PlayerSummaryActivity extends AppCompatActivity {
 
-    public static final String SERVER_HOST = "10.0.2.2";
-    public static final int SERVER_PORT = 8081;
+    public static final String SERVER_HOST = "192.168.0.17";
+    public static final int SERVER_PORT = 5000;
     public static final String PLAYERS_ENDPOINT = "/players";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_players_summary);
+        AsyncTask.execute(this::fetchPlayers);
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-        AsyncTask.execute(this::callApi);
-    }
-
-    private void callApi() {
+    private void fetchPlayers() {
         HttpURLConnection connection = connectToServer();
 
         try {
             if (connection.getResponseCode() == 200) {
-
-                InputStreamReader bodyReader = new InputStreamReader(connection.getInputStream(), "UTF-8");
-                List<Player> players = parsePlayersFromResponseBody(bodyReader);
+                BufferedReader bodyReader = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+                String response = getJsonResponse(bodyReader);
+                List<Player> players = parsePlayersFromResponse(response);
 
                 addPlayersToTable(players);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private String getJsonResponse(BufferedReader bodyReader) throws IOException {
+        StringBuilder response = new StringBuilder();
+        String currentLine;
+        while ((currentLine = bodyReader.readLine()) != null) {
+            response.append(currentLine);
+        }
+        return response.toString();
     }
 
     private HttpURLConnection connectToServer() {
@@ -61,40 +69,36 @@ public class PlayerSummaryActivity extends AppCompatActivity {
         }
     }
 
-    private List<Player> parsePlayersFromResponseBody(InputStreamReader bodyReader) throws IOException {
+    private List<Player> parsePlayersFromResponse(String response) {
         List<Player> players = new ArrayList<>();
 
-        JsonReader jsonReader = new JsonReader(bodyReader);
-        jsonReader.beginArray();
-        while (jsonReader.hasNext()) {
-            jsonReader.beginObject();
-            players.add(parsePlayer(jsonReader));
-            jsonReader.endObject();
+        try {
+            JSONObject json = new JSONObject(response);
+            JSONArray playersArray = json.getJSONArray("players");
+            for (int i = 0; i < playersArray.length(); i++) {
+                players.add(parsePlayer(playersArray.getJSONObject(i)));
+            }
+
+        } catch (JSONException ignored) {
         }
-        jsonReader.endArray();
-        jsonReader.close();
 
         return players;
     }
 
-    private Player parsePlayer(JsonReader jsonReader) throws IOException {
-        jsonReader.skipValue();
-        int id = jsonReader.nextInt();
-
-        jsonReader.skipValue();
-        String name = jsonReader.nextString();
-
-        jsonReader.skipValue();
-        int teamId = jsonReader.nextInt();
-
-        return new Player(id, name, teamId);
+    private Player parsePlayer(JSONObject playerObject) throws JSONException {
+        return new Player(
+                playerObject.getInt("player_id"),
+                playerObject.getString("first_name"),
+                playerObject.getString("last_name"),
+                playerObject.getInt("team_id")
+        );
     }
 
     private void addPlayersToTable(final List<Player> players) {
         runOnUiThread(() -> {
             for (Player player : players) {
                 TableLayout tableLayout = findViewById(R.id.playerSummaryTable);
-                TableRow row = buildTableRow(player.name);
+                TableRow row = buildTableRow(String.format("%s %s", player.first_name, player.last_name));
                 tableLayout.addView(row, new TableLayout.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
             }
         });
@@ -104,7 +108,7 @@ public class PlayerSummaryActivity extends AppCompatActivity {
         TextView nameTextView = new TextView(this);
         nameTextView.setText(playerName);
         nameTextView.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
-        nameTextView.setTextSize(24);
+        nameTextView.setTextSize(36);
 
         TableRow row = new TableRow(this);
         row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));

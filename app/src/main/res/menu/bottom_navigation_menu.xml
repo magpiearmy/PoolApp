@@ -7,11 +7,15 @@
         android:icon="@drawable/home_button_24"
         android:title="Home" />
     <item
+        android:id="@+id/matches"
+        android:icon="@drawable/round_view_list_24"
+        android:title="Matches" />
+    <item
         android:id="@+id/league"
         android:icon="@drawable/baseline_table_view_24"
         android:title="Tables" />
     <item
-        android:id="@+id/stats"
+        android:id="@+id/players"
         android:icon="@drawable/baseline_face_24"
         android:title="Players" />
 </menu>

@@ -2,10 +2,11 @@ package com.example.adam.poolapp;
 
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+
+import androidx.fragment.app.Fragment;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -20,16 +21,20 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PlayerSummaryActivity extends AppCompatActivity {
+public class PlayersFragment extends Fragment {
 
+    public static final String PROTOCOL = "http";
     public static final String SERVER_HOST = "192.168.0.17";
     public static final int SERVER_PORT = 5000;
     public static final String PLAYERS_ENDPOINT = "/players";
 
+    public PlayersFragment() {
+        super(R.layout.fragment_players);
+    }
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_players_summary);
         AsyncTask.execute(this::fetchPlayers);
     }
 
@@ -60,7 +65,7 @@ public class PlayerSummaryActivity extends AppCompatActivity {
 
     private HttpURLConnection connectToServer() {
         try {
-            URL playersEndpoint = new URL("http", SERVER_HOST, SERVER_PORT, PLAYERS_ENDPOINT);
+            URL playersEndpoint = new URL(PROTOCOL, SERVER_HOST, SERVER_PORT, PLAYERS_ENDPOINT);
             return (HttpURLConnection) playersEndpoint.openConnection();
         } catch (MalformedURLException e) {
             throw new RuntimeException("Malformed URL", e);
@@ -95,9 +100,9 @@ public class PlayerSummaryActivity extends AppCompatActivity {
     }
 
     private void addPlayersToTable(final List<Player> players) {
-        runOnUiThread(() -> {
+        getActivity().runOnUiThread(() -> {
             for (Player player : players) {
-                TableLayout tableLayout = findViewById(R.id.playerSummaryTable);
+                TableLayout tableLayout = getActivity().findViewById(R.id.playerSummaryTable);
                 TableRow row = buildTableRow(String.format("%s %s", player.first_name, player.last_name));
                 tableLayout.addView(row, new TableLayout.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
             }
@@ -105,12 +110,12 @@ public class PlayerSummaryActivity extends AppCompatActivity {
     }
 
     private TableRow buildTableRow(String playerName) {
-        TextView nameTextView = new TextView(this);
+        TextView nameTextView = new TextView(getActivity());
         nameTextView.setText(playerName);
         nameTextView.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
         nameTextView.setTextSize(36);
 
-        TableRow row = new TableRow(this);
+        TableRow row = new TableRow(getActivity());
         row.setLayoutParams(new TableRow.LayoutParams(TableRow.LayoutParams.FILL_PARENT, TableRow.LayoutParams.WRAP_CONTENT));
         row.addView(nameTextView);
         return row;
